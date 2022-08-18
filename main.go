@@ -51,13 +51,13 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	sifrelenmisPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		w.Write([]byte("Şifreleme hatası: " + err.Error()))
+		w.Write([]byte("encryption error" + err.Error()))
 		return
 	}
 
 	userResult, err := db.CreateUser(psql, user.Email, string(sifrelenmisPassword))
 	if err != nil {
-		w.Write([]byte("User oluşturma hatası: " + err.Error()))
+		w.Write([]byte("error creating user" + err.Error()))
 		return
 	}
 
@@ -71,13 +71,13 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, passwordInDatabase, err := db.GetIDAndPassword(psql, user.Email)
 	if err != nil {
-		w.Write([]byte("Email veya şifre yanlış"))
+		w.Write([]byte("your password or email was incorrect"))
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordInDatabase), []byte(user.Password))
 	if err != nil {
-		w.Write([]byte("Email veya şifre yanlış"))
+		w.Write([]byte("your password or email was incorrect"))
 		return
 	}
 
@@ -87,7 +87,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	_, tokenStr, err := tokenUretici.Encode(veriler)
 	if err != nil {
-		w.Write([]byte("Token üretim hatası : " + err.Error()))
+		w.Write([]byte("token error : " + err.Error()))
 		return
 	}
 
@@ -106,7 +106,7 @@ func GetUserID(r *http.Request) (int64, error) {
 			userID = veriler["id"].(float64)
 		}
 	} else {
-		return 0, errors.New("TOKEN YOK")
+		return 0, errors.New("no token")
 	}
 
 	return int64(userID), nil
@@ -118,13 +118,12 @@ func AddBlog(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	//BLOG ÜRETME KISMI AŞAĞIDA
 	createBlog := &db.Blogs{}
 	json.NewDecoder(r.Body).Decode(createBlog)
 
 	blog, err := db.CreateBlog(psql, userID, createBlog.Title, createBlog.Description)
 	if err != nil {
-		w.Write([]byte("Blog oluşturma hatası: " + err.Error()))
+		w.Write([]byte("error creating blog: " + err.Error()))
 		return
 	}
 
@@ -142,7 +141,7 @@ func GetBlogs(w http.ResponseWriter, r *http.Request) {
 		blogs, err = db.SearchBlogs(psql, search)
 	}
 	if err != nil {
-		w.Write([]byte("Blog çekme hatası: " + err.Error()))
+		w.Write([]byte("error: " + err.Error()))
 		return
 	}
 	w.Header().Set("content-type", "application/json")
@@ -155,7 +154,7 @@ func DeleteBlog(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		w.Write([]byte("Girdiğiniz id bir sayı değildi"))
+		w.Write([]byte("id is not a number"))
 		return
 	}
 
@@ -163,7 +162,7 @@ func DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
-		w.Write([]byte("Blog " + idStr + " başarıyla silindi."))
+		w.Write([]byte("blog " + idStr + " is delete succesfully"))
 	}
 }
 
@@ -172,7 +171,7 @@ func UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(updateBlog)
 	blog, err := db.UpdateBlog(psql, int(updateBlog.ID), updateBlog.Title, updateBlog.Description)
 	if err != nil {
-		log.Println("Güncelleme hatası !")
+		log.Println("update error!")
 	}
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(blog)
